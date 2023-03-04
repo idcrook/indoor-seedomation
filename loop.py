@@ -3,14 +3,18 @@
 # A simple control loop for turning on heater to keep within a measured range of temperatures
 
 # TODO
+#
 #  - Synchronize initial state of heater, rather than forcing it to be set off
+#  - add proper logging
+#  - add configuration file support (broker, topic, device names, etc.)
+#
 
 import time
 import re 
 import pywemo
 import paho.mqtt.client as mqtt
 
-LOWER_TEMPERATURE = 65.0
+LOWER_TEMPERATURE = 68.0
 UPPER_TEMPERATURE = 74.0
 
 global SM_STATE
