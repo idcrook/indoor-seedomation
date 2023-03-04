@@ -7,10 +7,8 @@ devices_of_interest = ('Bedroom 2 Plant Light 2',
     'Bedroom 2 Plant Heater')
 
 devices = pywemo.discover_devices()
-print(devices)
 for device in devices:
-    print (device.name, end = " ")
-print()
+    print ("  {}".format(device.name))
 
 device_mapping = {}
 
@@ -32,4 +30,6 @@ for device in devices:
 print(device_mapping)
 
 for name, url in device_mapping.items(): 
-    print (name, url)
+    #print (name, url)
+    device = pywemo.discovery.device_from_description(url)
+    print(device.name)
