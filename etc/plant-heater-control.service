@@ -22,6 +22,8 @@ WorkingDirectory=/home/pi/projects/indoor-seedomation
 ExecStart=/home/pi/projects/indoor-seedomation/.venv/bin/python \
           /home/pi/projects/indoor-seedomation/loop.py
 User=pi
+# do not buffer output (useful for debugging)
+#Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=default.target
