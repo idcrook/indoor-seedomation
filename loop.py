@@ -5,9 +5,12 @@
 # TODO
 #
 #  - Synchronize initial state of heater, rather than forcing it to be set off
+#  - Implement a PID controller?
 #  - add proper logging
 #  - add configuration file support (broker, topic, device names, etc.)
-#
+#  - detect if no messages (temperature updates) have been received in a long time
+#    - could be sign that probe or network is down
+#    - may want to attempt to turn off switch in that case and go to a new panic state
 
 import time
 import re 
@@ -68,11 +71,11 @@ def on_message(client, userdata, msg):
 def set_device_state(device, to_state):
     print(' setting device {} state to {}'.format(device.name, to_state))
     if to_state == SM_STATE__ON:
-        print ("Turning device ON")
+        print ("Turning ON  device {}".format(device.name))
         device.on()
         time.sleep(2)
     if to_state == SM_STATE__OFF:
-        print ("Turning device OFF")
+        print ("Turning OFF device {}".format(device.name))
         device.off()
         time.sleep(2)
 
@@ -106,7 +109,7 @@ def update_temperature(device, temperature_F_string):
 temperature_F_regex = re.compile(r"(\d+\.?\d*)")
 def parse_temperature(temperature_F_string):
     m = temperature_F_regex.match(temperature_F_string)
-    print ("{} ".format(m.group(0)), end="")
+    #print ("{} ".format(m.group(0)), end="")
     value = float(m.group(0))
     return value
 
@@ -115,13 +118,16 @@ client = mqtt.Client()
 client.connect(mqtt_broker_addr,1883,60)
 client.on_connect = on_connect
 client.on_message = on_message
-# Start the MQTT thread that handles this client
-client.loop_start()
 
 # set initial state
 set_device_state(device, SM_INITIAL_STATE)
+
+# Start the MQTT thread that handles this client
 print ("Starting Control LOOP")
+print("Using temperature range: {}F to {}F".format(LOWER_TEMPERATURE, UPPER_TEMPERATURE))
+
+client.loop_start()
 
 while True:
-    print("D{} SM{} ".format(device.get_state(), SM_STATE), end="")
-    time.sleep(60)
+    print("Main thread: D{} SM{} ".format(device.get_state(), SM_STATE))
+    time.sleep(600)
