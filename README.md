@@ -82,3 +82,22 @@ See `control.py` and `mqtt.py`
 Refer to instructions in comments at the top of [example service file][systemd service file]
 
 [systemd service file]: etc/plant-heater-control.service
+
+### Example `loop.py` output
+
+```text
+('Bedroom 2 Plant Heater',)
+ setting device Bedroom 2 Plant Heater state to 0
+Turning OFF device Bedroom 2 Plant Heater
+Starting Control LOOP
+Using temperature range of 68.0F to 74.0F
+Main thread: D0 SM0
+Wemo Insight: Bedroom 2 Plant Heater
+current state: 0, temperature 67.2
+ setting device Bedroom 2 Plant Heater state to 1
+Turning ON  device Bedroom 2 Plant Heater
+current state: 1, temperature 67.2
+current state: 1, temperature 67.3
+current state: 1, temperature 67.4
+current state: 1, temperature 67.4
+```
