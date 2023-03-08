@@ -4,12 +4,14 @@
 
 # TODO
 #
+#  - Add environment variable support for configuration
+#  - Add configuration file support (broker, topic, device names, etc.)
+#  - Add tests, modularity
 #  - Synchronize initial state of heater, rather than forcing it to be set off
 #  - Implement a PID controller?
-#  - add proper logging
-#  - add configuration file support (broker, topic, device names, etc.)
-#  - detect if no messages (temperature updates) have been received in a long time
-#    - could be sign that probe or network is down
+#  - Ddd proper logging
+#  - Add timeout for new messages not received (temperature updates)
+#    - could be sign that probe or network is down?
 #    - may want to attempt to turn off switch in that case and go to a new panic state
 
 import time
@@ -26,6 +28,7 @@ SM_STATE__ON =  1
 SM_INITIAL_STATE = SM_STATE__OFF
 SM_STATE = SM_INITIAL_STATE
 
+TEMPERATURE_LAST_READ = 0.0
 
 mqtt_broker_addr = "192.168.50.6"
 topic_base = "picow0"
@@ -103,7 +106,9 @@ def update_state(device, temperature):
 
 
 def update_temperature(device, temperature_F_string):
+    global TEMPERATURE_LAST_READ
     temperature_float = parse_temperature(temperature_F_string)
+    TEMPERATURE_LAST_READ = temperature_float
     update_state(device, temperature_float)
 
 temperature_F_regex = re.compile(r"(\d+\.?\d*)")
@@ -129,5 +134,5 @@ print("Using temperature range: {}F to {}F".format(LOWER_TEMPERATURE, UPPER_TEMP
 client.loop_start()
 
 while True:
-    print("Main thread: D{} SM{} ".format(device.get_state(), SM_STATE))
-    time.sleep(600)
+    print("Main thread: D{} SM{} T{}F".format(device.get_state(), SM_STATE, TEMPERATURE_LAST_READ))
+    time.sleep(60)
