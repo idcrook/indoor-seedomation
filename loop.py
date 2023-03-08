@@ -21,6 +21,7 @@ import paho.mqtt.client as mqtt
 
 LOWER_TEMPERATURE = 68.0
 UPPER_TEMPERATURE = 74.0
+MAIN_DISPLAY_LOOP_SLEEP_TIME = 600
 
 global SM_STATE
 SM_STATE__OFF = 0
@@ -135,4 +136,4 @@ client.loop_start()
 
 while True:
     print("Main thread: D{} SM{} T{}F".format(device.get_state(), SM_STATE, TEMPERATURE_LAST_READ))
-    time.sleep(60)
+    time.sleep(MAIN_DISPLAY_LOOP_SLEEP_TIME)
