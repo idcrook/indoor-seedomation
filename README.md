@@ -101,3 +101,20 @@ current state: 1, temperature 67.3
 current state: 1, temperature 67.4
 current state: 1, temperature 67.4
 ```
+
+## Troublshooting
+
+### Missing `libxslt` XML library
+
+Encountered on armv7 Raspbian bookworm, from the pywemo / .ouimeaux module
+
+```console
+$ python discovery.py
+[STACKTRACE]
+   ...
+ from lxml import etree as et
+ImportError: libxslt.so.1: cannot open shared object file: No such file or directory
+$ sudo apt install libxslt1.1
+# should now work
+$ python discovery.py
+```
