@@ -21,7 +21,7 @@ import pywemo
 import paho.mqtt.client as mqtt
 
 LOWER_TEMPERATURE = 70.0
-UPPER_TEMPERATURE = 74.0
+UPPER_TEMPERATURE = 72.9
 MAIN_DISPLAY_LOOP_SLEEP_TIME = 600
 
 global SM_STATE
