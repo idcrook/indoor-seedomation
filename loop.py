@@ -21,8 +21,6 @@ import traceback
 import pywemo
 import paho.mqtt.client as mqtt
 
-LOWER_TEMPERATURE = 70.0
-UPPER_TEMPERATURE = 72.9
 DEFAULT_DISPLAY_LOOP_SLEEP_TIME = 600
 
 global SM_STATES
@@ -63,16 +61,12 @@ SENSORS_CONF = CONFIG.get("sensors", {})
 CONTROLS_CONF = CONFIG.get("controls", {})
 GLOBAL_CONF = CONFIG.get("global", {})
 
-print(MQTT_CONF,
-      SENSORS_CONF)
-
 # Globals
 DISPLAY_LOOP_SLEEP_TIME = GLOBAL_CONF.get('loop_sleep_time', DEFAULT_DISPLAY_LOOP_SLEEP_TIME)
 
 # MQTT config
 MQTT_BROKER = bytes(MQTT_CONF.get('broker', DEFAULT_MQTT_BROKER_ADDR), 'utf-8')
 MQTT_PORT = MQTT_CONF.get('port', DEFAULT_MQTT_PORT)
-
 
 # Sensors
 PROBES = SENSORS_CONF.get('probes', {})
@@ -108,12 +102,6 @@ for heater in HEATERS:
 
 print(DEVICE_MAPPING)
 
-
-wemo_name_to_topic_mapping = {
-    'Bedroom 2 Plant Heater':
-        {'topic' : ''}
-    }
-
 devices_of_interest = tuple(HEATER_MAPPING.keys())
 
 print(devices_of_interest)
@@ -141,15 +129,35 @@ for device_name in devices_of_interest:
     SM_STATES[device_name] = SM_INITIAL_STATE
     TEMPERATURES_LAST_READ[device_name] = 0.0
 
-def on_connect(client, userdata, flags, rc):
-    for device in DEVICE_LIST:
-        wemo_device = DEVICE_LIST[device]
-        # FIXME: exception handling
-        topic = HEATER_MAPPING[device]['topic']
-        connect_report = "Starting Wemo %s: %s   %s" % (wemo_device.device_type,
-                                                        wemo_device.name, topic)
-        print(connect_report, topic)
-        client.subscribe(topic)
+def on_connect(client, userdata, flags, reason_code, properties):
+    if flags.session_present:
+        # ...
+        pass
+
+    if reason_code == 0:
+        # success connect
+        for device in DEVICE_LIST:
+            wemo_device = DEVICE_LIST[device]
+            # FIXME: exception handling
+            topic = HEATER_MAPPING[device]['topic']
+            connect_report = "Starting Wemo %s: %s   %s" % (wemo_device.device_type,
+                                                            wemo_device.name, topic)
+            print(connect_report, topic)
+            client.subscribe(topic)
+
+    if reason_code > 0:
+        # error processing
+        pass
+
+# def on_connect(client, userdata, flags, rc):
+#     for device in DEVICE_LIST:
+#         wemo_device = DEVICE_LIST[device]
+#         # FIXME: exception handling
+#         topic = HEATER_MAPPING[device]['topic']
+#         connect_report = "Starting Wemo %s: %s   %s" % (wemo_device.device_type,
+#                                                         wemo_device.name, topic)
+#         print(connect_report, topic)
+#         client.subscribe(topic)
 
 def on_message(client, userdata, msg):
     # print(msg.topic, msg.payload)
@@ -177,7 +185,12 @@ def get_device_upper_temperature(device):
     return HEATER_MAPPING[device]['upper_T']
 
 def get_device_sm_state(device):
+    # global SM_STATES
     return SM_STATES[device]
+
+def set_device_sm_state(device, state):
+    global SM_STATES
+    SM_STATES[device] = state
 
 def set_wemo_device_state(device, to_state):
     print(' setting device {} state to {}'.format(device.name, to_state))
@@ -192,24 +205,24 @@ def set_wemo_device_state(device, to_state):
 
 # main state machine
 def update_state(device, temperature):
-    global SM_STATES
-    print ('current device: {}, state: {}, temperature {}'.format(
-        device, get_device_sm_state(device), temperature))
+    current_SM_STATE = get_device_sm_state(device)
+
+    print ('"{}" SM: {}, T: {}'.format(
+        device, current_SM_STATE, temperature))
 
     wemo_device = DEVICE_LIST[device]
-    current_SM_STATE = SM_STATES[device]
-    # print ('current SM:', current_SM_STATE)
+        # print ('current SM:', current_SM_STATE)
     if current_SM_STATE == SM_STATE__OFF:
         if temperature < get_device_lower_temperature(device):
             set_wemo_device_state(wemo_device, SM_STATE__ON)
-            SM_STATES[device] = SM_STATE__ON
+            set_device_sm_state(device, SM_STATE__ON)
         else:
             # we are off and above the LOWER_TEMPERATURE
             pass
     elif current_SM_STATE == SM_STATE__ON:
         if temperature > get_device_upper_temperature(device):
             set_wemo_device_state(wemo_device, SM_STATE__OFF)
-            SM_STATES[device] = SM_STATE__OFF
+            set_device_sm_state(device, SM_STATE__OFF)
         else:
             # we are on and below the UPPER_TEMPERATURE
             pass
@@ -233,7 +246,10 @@ def parse_temperature(temperature_in_F_string):
     return value
 
 # Setup MQTT Client
-client = mqtt.Client()
+# https://eclipse.dev/paho/files/paho.mqtt.python/html/migrations.html#versioned-the-user-callbacks
+#client = mqtt.Client()
+# https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html#paho.mqtt.client.Client
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.connect(MQTT_BROKER, MQTT_PORT, 60)
 client.on_connect = on_connect
 client.on_message = on_message
@@ -249,7 +265,7 @@ client.loop_start()
 
 while True:
     for device in DEVICE_LIST:
-        print("Main thread: D{} SM{} T{}F".format(
-            DEVICE_LIST[device].get_state(),
+        print("Main thread: '{}' D{} SM{} T{}F".format(
+            device, DEVICE_LIST[device].get_state(),
             get_device_sm_state(device), TEMPERATURES_LAST_READ[device]))
     time.sleep(DISPLAY_LOOP_SLEEP_TIME)
