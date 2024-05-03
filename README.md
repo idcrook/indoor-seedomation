@@ -4,7 +4,7 @@
 
 [main script](loop.py)
 
- - It monitors an MQTT topic that contains temperature read from a sensor placed in soil. 
+ - It monitors an MQTT topic that contains temperature read from a sensor placed in soil.
  - Based on temperature it turns a heater on or off to keep temperature in a range.
 
 
@@ -101,6 +101,19 @@ current state: 1, temperature 67.3
 current state: 1, temperature 67.4
 current state: 1, temperature 67.4
 ```
+
+
+## Configuration
+
+
+```shell
+# create config file (edit script or output)
+python3 create_cfg.py
+cp config.example.json config.secrets.json
+# !! EDIT FILE config.secrets.json for your environment
+
+```
+
 
 ## Troublshooting
 
