@@ -208,7 +208,7 @@ def update_state(device, temperature):
     current_SM_STATE = get_device_sm_state(device)
 
     print ('"{}" SM: {}, T: {}'.format(
-        device, current_SM_STATE, temperature))
+        device[-8:], current_SM_STATE, temperature))
 
     wemo_device = DEVICE_LIST[device]
         # print ('current SM:', current_SM_STATE)
@@ -229,7 +229,8 @@ def update_state(device, temperature):
     else: # unknown state / condition!
         pass
 
-    # FIXME: assert that SM matches device state
+    # FIXME?: assert that SM matches device state
+
 
 
 def update_temperature(device, temperature_in_F_string):
