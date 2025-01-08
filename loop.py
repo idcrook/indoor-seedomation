@@ -2,6 +2,11 @@
 
 # A simple control loop for turning on heater to keep within a measured range of temperatures
 
+# FIXME
+#
+#  - Turn off heaters for KeyboardInterrupt / Exit
+#
+#
 # TODO
 #
 #  - Add environment variable support for configuration
@@ -10,7 +15,7 @@
 #  - Synchronize initial state of heater, rather than forcing it to be set off
 #  - Implement a PID controller?
 #  - Ddd proper logging
-#  - Add timeout for new messages not received (temperature updates)
+#  - Add watchdog timeout for new messages not received (temperature updates)
 #    - could be sign that probe or network is down?
 #    - may want to attempt to turn off switch in that case and go to a new panic state
 

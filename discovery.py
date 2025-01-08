@@ -3,8 +3,8 @@
 import pywemo
 import re
 
-devices_of_interest = ('Bedroom 2 Plant Light 2', 
-    'Bedroom 2 Plant Heater')
+devices_of_interest =  ('Bedroom 2 Plant Light 2', 
+    'Bedroom 2 Plant Heater', 'Bedroom 2 Plant Heater 2', 'Bedroom 2 Plant Heater 3')
 
 devices = pywemo.discover_devices()
 for device in devices:
