@@ -7,4 +7,4 @@
 Initially used `wemo` smart outlets. Also now have a version that uses `kasa` smart power strip.
 
 
-SEE ALSO: <https://github.com/idcrook/picow-projects>
+SEE ALSO: <https://github.com/idcrook/picow-projects>, specifically [multi_monitor](https://github.com/idcrook/picow-projects/tree/main/multi_monitor)
