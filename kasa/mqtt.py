@@ -21,6 +21,7 @@ DEFAULT_MQTT_PORT = 1883
 DEFAULT_TOPIC_BASE = "picow0"
 DEFAULT_TEMPERATURE_KEY = "temperature"
 DEFAULT_HOST_ADDRESS = '192.168.50.6'
+HEATER_DISABLED_SENTINEL_VALUE = 'DISABLED'
 
 CONFIG = {}
 DEVICE_MAPPING = {'probes':{},
@@ -80,7 +81,7 @@ for host in HOSTS_CONF:
         upper_temp = heater_info['upper_temperature']
         lower_temp = heater_info['lower_temperature']
         topic = PROBE_MAPPING[probe_name]['topic']
-        #print (host_address, heater_name, heater_temperature_topic)
+        #print (host_address, heater_name, topic)
         HEATER_MAPPING[heater_name] = {}
         HEATER_MAPPING[heater_name]['host'] = host_address
         HEATER_MAPPING[heater_name]['plug_alias'] = heater_name
@@ -88,8 +89,13 @@ for host in HOSTS_CONF:
         HEATER_MAPPING[heater_name]['probe'] = probe_name
         HEATER_MAPPING[heater_name]['upper_T'] = upper_temp
         HEATER_MAPPING[heater_name]['lower_T'] = lower_temp
-        PROBE_MAPPING[probe_name]['heater'] = heater_name
         TOPIC_MAPPING[topic]['heater'] = HEATER_MAPPING[heater_name]
+
+        if heater_info.get('enabled', False):
+            PROBE_MAPPING[probe_name]['heater'] = heater_name
+        else:
+            print("Heater", heater_name, "is not enabled.")
+            PROBE_MAPPING[probe_name]['heater'] = HEATER_DISABLED_SENTINEL_VALUE
 
 #print(DEVICE_MAPPING)
 
@@ -106,9 +112,11 @@ async def main():
     async with aiomqtt.Client(MQTT_BROKER) as client:
         # Subscribe to MQTT
         for probe_name in PROBE_MAPPING:
-            heater_name = PROBE_MAPPING[probe_name]['heater']
-            topic = PROBE_MAPPING[probe_name]['topic']
-            await subscribe_device(client, heater_name, topic)
+            heater_name = PROBE_MAPPING[probe_name].get(
+                'heater', HEATER_DISABLED_SENTINEL_VALUE)
+            if heater_name != HEATER_DISABLED_SENTINEL_VALUE:
+                topic = PROBE_MAPPING[probe_name]['topic']
+                await subscribe_device(client, heater_name, topic)
         # Handle MQTT updates
         async for message in client.messages:
             await handle_temperature_update(message.topic.value, message.payload)

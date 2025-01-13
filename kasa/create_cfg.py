@@ -9,22 +9,28 @@ example_config = {
     "controls": {
         "hosts": [
             {
-                "address": "192.168.1.100",
+                "address": "192.168.50.100",
                 "heaters" : [
-                    {"plug_alias" : "Heater 2",
-                     "probe": "bed2",
-                     "lower_temperature": 70.0,
-                     "upper_temperature": 72.9
+                    {
+                        "enabled" : True,
+                        "plug_alias" : "Heater 2",
+                        "probe": "bed2",
+                        "lower_temperature": 70.0,
+                        "upper_temperature": 72.9
                      },
-                    {"plug_alias" : "Heater 1",
-                     "probe": "bed1",
-                     "lower_temperature": 70.0,
-                     "upper_temperature": 72.9
+                    {
+                        "enabled" : True,
+                        "plug_alias" : "Heater 1",
+                        "probe": "bed1",
+                        "lower_temperature": 70.0,
+                        "upper_temperature": 72.9
                      },
-                    {"plug_alias" : "Heater 3",
-                     "probe": "bed3",
-                     "lower_temperature": 70.0,
-                     "upper_temperature": 72.9
+                    {
+                        "enabled" : False,
+                        "plug_alias" : "Heater 3",
+                        "probe": "bed3",
+                        "lower_temperature": 70.0,
+                        "upper_temperature": 72.9
                      },
                 ],
             },
@@ -39,7 +45,7 @@ example_config = {
         ]
     },
     "mqtt": {
-        "broker": "192.168.1.10",
+        "broker": "192.168.50.10",
         "port": 1883,
     }
 }
@@ -49,4 +55,4 @@ example_config = {
 output_json = 'config.example.json'
 with open(output_json, 'w') as jsonfile:
     print('saving to', output_json)
-    json.dump(example_config, jsonfile, indent=2)
+    json.dump(example_config, jsonfile, indent=4)
