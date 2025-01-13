@@ -21,8 +21,10 @@
 import asyncio
 import datetime
 import json
-import aiomqtt
+import functools
+import re
 
+import aiomqtt
 from kasa import Device, Discover, Credentials
 
 DEFAULT_DISPLAY_LOOP_SLEEP_TIME = 600
@@ -137,17 +139,18 @@ async def register_device(heater_info):
     dev = await Device.connect(config=Device.Config.from_dict(config_dict))
     # print(dev)
     _socket = None
-    index = 0
+    index = _index = 0
     for plug in dev.children:
         if plug.alias == heater_name:
+            _index = index
             _socket = plug
-            print ("heater found at index", index, plug)
+            print ("heater found at index", _index, _socket)
         index += 1
     if _socket != None:
         device_info = {}
         device_info['connect_config'] = config_dict
         device_info['_device'] = dev
-        device_info['_child_index'] = index
+        device_info['_child_index'] = _index
         device_info['_plug'] = _socket
         DEVICE_LIST[heater_name] = device_info
         # turn off if it is on
@@ -160,10 +163,21 @@ async def register_device(heater_info):
     else :
         print('ERROR: Did not find heater control')
 
+def get_device_info_from_heater_name(heater_name):
+    device_info = DEVICE_LIST.get(heater_name);
+    # print(heater_name, device_info)
+    return device_info
 
 async def subscribe_device(client, heater_name, topic):
     print("subscribing", topic, heater_name)
     await client.subscribe(topic)
+
+def get_heater_lower_temperature(heater_name):
+    return HEATER_MAPPING[heater_name]['lower_T']
+
+def get_heater_upper_temperature(heater_name):
+    return HEATER_MAPPING[heater_name]['upper_T']
+
 
 def get_heater_sm_state(heater_name):
     # global SM_STATES
@@ -174,19 +188,72 @@ def set_heater_sm_state(heater_name, state):
     SM_STATES[heater_name] = state
 
 async def set_kasa_outlet_state(heater_name, to_state):
+    "controls actual Kasa outlet where heater is plugged in."
+
     print(' setting device {} state to {}'.format(heater_name, to_state))
+    heater_device_info = get_device_info_from_heater_name(heater_name)
+    # config_dict = device.config.to_dict()
+    # dev = await Device.connect(config=Device.Config.from_dict(config_dict))
+
+    plug = heater_device_info ['_plug']
+
     if to_state == SM_STATE__ON:
         print ("Turning ON device {}".format(heater_name))
         # device.on()
+        await plug.turn_on()
+        await plug.update()
     if to_state == SM_STATE__OFF:
         print ("Turning OFF device {}".format(heater_name))
         # device.off()
+        await plug.turn_off()
+        await plug.update()
 
-def update_temperature(heater_name, temperature):
-    print(heater_name, temperature)
-    pass
 
-# FIXME: turn off or on based on temperature reading
+
+# main update of state machine
+async def update_state(heater_name, temperature):
+    current_SM_STATE = get_heater_sm_state(heater_name)
+
+    print ('"{}" SM: {}, T: {}'.format(
+        heater_name[-8:], current_SM_STATE, temperature))
+
+    # print ('current SM:', current_SM_STATE)
+    if current_SM_STATE == SM_STATE__OFF:
+        if temperature < get_heater_lower_temperature(heater_name):
+            await set_kasa_outlet_state(heater_name, SM_STATE__ON)
+            set_heater_sm_state(heater_name, SM_STATE__ON)
+        else:
+            # we are off and above the LOWER_TEMPERATURE
+            pass
+    elif current_SM_STATE == SM_STATE__ON:
+        if temperature > get_heater_upper_temperature(heater_name):
+            await set_kasa_outlet_state(heater_name, SM_STATE__OFF)
+            set_heater_sm_state(heater_name, SM_STATE__OFF)
+        else:
+            # we are on and below the UPPER_TEMPERATURE
+            pass
+    else: # unknown state / condition!
+        pass
+
+    # FIXME?: assert that SM matches device state
+
+
+
+async def update_temperature(heater_name, temperature_in_F_string):
+    global TEMPERATURES_LAST_READ
+    temperature_float = parse_temperature(temperature_in_F_string)
+    TEMPERATURES_LAST_READ[heater_name] = temperature_float
+    # this is where control of heater is handled too
+    await update_state(heater_name, temperature_float)
+
+temperature_in_F_regex = re.compile(r"(\d+\.?\d*)")
+@functools.cache
+def parse_temperature(temperature_in_F_string):
+    m = temperature_in_F_regex.match(temperature_in_F_string)
+    #print ("{} ".format(m.group(0)), end="")
+    value = float(m.group(0))
+    return value
+
 async def handle_temperature_update(topic, payload):
     """
     Process mqtt-sourced temperature updates.
@@ -202,10 +269,7 @@ async def handle_temperature_update(topic, payload):
     # print(s)
     temperature = s[DEFAULT_TEMPERATURE_KEY]
     # print(temperature)
-
-    update_temperature(heater_name, temperature)
-
-
+    await update_temperature(heater_name, temperature)
 
 async def handle_mqtt_messages(client):
     "Handle MQTT updates"
@@ -215,10 +279,16 @@ async def handle_mqtt_messages(client):
 
 async def print_current_status():
     while True:
-        print(datetime.datetime.now())
-        # FIXME: add device control state machine monitoring
         for heater_name in SM_STATES:
-            print(heater_name, SM_STATES[heater_name], end=" ")
+            print(datetime.datetime.now(), end=" ")
+            print(heater_name, SM_STATES[heater_name], TEMPERATURES_LAST_READ[heater_name],  end=" ")
+            heater_device_info = get_device_info_from_heater_name(heater_name)
+            #config_dict = heater_device_info['connect_config']
+            child_index = heater_device_info.get('_child_index')
+            dev = heater_device_info['_device']
+            await dev.update()
+
+            print ("is on?", dev.children[child_index].is_on)
         await asyncio.sleep(DISPLAY_LOOP_SLEEP_TIME)
 
 # main asyncio loop
