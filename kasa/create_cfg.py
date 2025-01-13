@@ -13,21 +13,21 @@ example_config = {
                 "heaters" : [
                     {
                         "enabled" : True,
-                        "plug_alias" : "Heater 2",
+                        "plug_alias" : "Heater2",
                         "probe": "bed2",
                         "lower_temperature": 70.0,
                         "upper_temperature": 72.9
                      },
                     {
                         "enabled" : True,
-                        "plug_alias" : "Heater 1",
+                        "plug_alias" : "Heater1",
                         "probe": "bed1",
                         "lower_temperature": 70.0,
                         "upper_temperature": 72.9
                      },
                     {
                         "enabled" : False,
-                        "plug_alias" : "Heater 3",
+                        "plug_alias" : "Heater3",
                         "probe": "bed3",
                         "lower_temperature": 70.0,
                         "upper_temperature": 72.9
